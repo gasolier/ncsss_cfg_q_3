@@ -9,6 +9,7 @@ class Parser():
         self._start_node = None
         self._length = len(tokens)
         self._tokens = tokens
+        self.node = None
 
     def end(self):
         return self._current_index == self._length - 1
@@ -25,42 +26,53 @@ class Parser():
         return node
 
     def _parse_e1(self):
-        pass
+        node = self._parse_e2()
+        if self.peek() == "+":
+            self.next()
+            node2 = self._parse_e1
+            node = AddNode(node, node2)
+        return node
+
 
     def _parse_e2(self):
-        pass
+        node = self._parse_e3()
+        if self.peek() == "*":
+            self.next()
+            node2 = self._parse_e2()
+            node = MultNode(node, node2)
+        return node
 
     def _parse_e3(self):
-        pass
+        if re.match(Parser.RE_NUMBER, self.peek()):
+            node = LiteralNode(int(self.peek()))
+        elif self.peek() == "(":
+            self.next()
+            node = self._parse_e1()
+            if self.peek() != ")":
+                raise Exception("(<e1> must be followed by a closing parentheses!")
+        self.next()
+        return node
 
 
 class Node():
 
-    def __init__(self, left=None, right=None):
+    def __init__(self, left, right):
         self._left = left
         self._right = right
         self._name = "cool"
 
-    def add_node(self, new_node):
-        if self._left == None:
-            self._left = new_node
-        elif self._right == None:
-            self._right = new_node
-        else:
-            raise IndexError("Attempting to add too many nodes!")
-
-    def eval(self):
+    def evaluate(self):
         raise NotImplementedError()
 
 class MultNode(Node):
 
-    def eval(self):
-        return self._left.eval() * self._right.eval()
+    def evaluate(self):
+        return self._left.evaluate() * self._right.evaluate()
 
 class AddNode(Node):
 
-    def eval(self):
-        return self._left.eval() + self._right.eval()
+    def evaluate(self):
+        return self._left.evaluate() + self._right.evaluate()
 
 class LiteralNode(Node):
 
@@ -68,7 +80,7 @@ class LiteralNode(Node):
         super().__init__(None, None)
         self._value = value
 
-    def eval(self):
+    def evaluate(self):
         return self._value
 
 your_calculator = Parser(["1", "+", "1"])
